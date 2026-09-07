@@ -190,6 +190,7 @@
     "settings.purging": "Đang xoá…",
     "settings.removedFiles": "Đã xoá {count} tập tin.",
     "settings.sr": "Tiếng Serbia",
+    "settings.syncAmLocale": "Đồng bộ hóa ngôn ngữ AM/AppMan với AM-GUI",
     "settings.theme": "Chủ đề",
     "settings.title": "Cài đặt",
     "settings.vi": "Tiếng Việt",

@@ -1,5 +1,6 @@
 (function registerCategoriesCache(){
   let categoriesCache = null;
+  let categoriesCacheLang = null;
   let backgroundRefreshPromise = null;
 
   function normalizeCategories(input) {
@@ -29,6 +30,15 @@
     return false;
   }
 
+  // Hook registered by renderer.js to enrich the tiles with translated
+  // descriptions whenever the categories cache changes.
+  function notifyUpdated(categories) {
+    try {
+      const hook = window.features && window.features.categories && window.features.categories._onUpdated;
+      if (typeof hook === 'function') hook(categories);
+    } catch (_) {}
+  }
+
   function maybeRefreshInBackground(options = {}) {
     if (backgroundRefreshPromise) return backgroundRefreshPromise;
     backgroundRefreshPromise = (async () => {
@@ -36,8 +46,14 @@
         const res = await window.electronAPI.fetchAllCategories();
         if (!res || !res.ok || !Array.isArray(res.categories)) return;
         const nextCategories = res.categories;
-        if (!categoriesChanged(categoriesCache || [], nextCategories)) return;
+        const nextLang = typeof res.lang === 'string' ? res.lang : null;
+        // Force an update when the cache language changed (translated
+        // descriptions follow the UI language).
+        const langChanged = nextLang !== null && nextLang !== categoriesCacheLang;
+        if (!langChanged && !categoriesChanged(categoriesCache || [], nextCategories)) return;
         categoriesCache = nextCategories;
+        categoriesCacheLang = nextLang;
+        notifyUpdated(nextCategories);
         if (typeof options.onUpdated === 'function') {
           try { options.onUpdated(nextCategories); } catch (_) {}
         }
@@ -62,6 +78,8 @@
       const cacheRes = await window.electronAPI.getCategoriesCache();
       if (cacheRes.ok && Array.isArray(cacheRes.categories) && cacheRes.categories.length > 0) {
         categoriesCache = cacheRes.categories;
+        categoriesCacheLang = typeof cacheRes.lang === 'string' ? cacheRes.lang : null;
+        notifyUpdated(categoriesCache);
         if (options.backgroundRefresh !== false) {
           maybeRefreshInBackground(options);
         }
@@ -72,6 +90,8 @@
       const res = await window.electronAPI.fetchAllCategories();
       if (!res.ok || !Array.isArray(res.categories)) throw new Error(res.error || 'Categories error');
       categoriesCache = res.categories;
+      categoriesCacheLang = typeof res.lang === 'string' ? res.lang : null;
+      notifyUpdated(categoriesCache);
       return categoriesCache;
     } catch (error) {
       if (showToast) {
@@ -86,6 +106,7 @@
 
   function resetCategoriesCache() {
     categoriesCache = null;
+    categoriesCacheLang = null;
   }
 
   function peek() {

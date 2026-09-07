@@ -157,7 +157,7 @@ describe('main-process modules (integration)', () => {
         '<a href="index.html">Home</a>';
       undici.fetch = async (url, options = {}) => {
         const headers = options.headers || {};
-        if (url.includes('/cat_page.in')) {
+        if (url.endsWith('/index.html')) {
           return createResponse({ textData: indexHtml });
         }
         const fileName = path.basename(url);
@@ -186,6 +186,7 @@ describe('main-process modules (integration)', () => {
       assert.ok(firstFetch.ok, `fetch-all-categories ok: ${firstFetch.error}`);
       assert.strictEqual(firstFetch.categories.length, 2);
       assert.ok(firstFetch.categories[0].apps.includes('alpha'), 'category parsing works');
+      assert.strictEqual(firstFetch.categories[0].descriptions.alpha, 'great app', 'descriptions are kept for tile rendering');
 
       const cached = await ipcHandlers.get('get-categories-cache')();
       assert.ok(cached.ok && cached.categories.length === 2, 'get-categories-cache returns data');

@@ -191,6 +191,7 @@
         "settings.purging": "Čištění…",
         "settings.removedFiles": "{count} soubor(y) odstraněn(y).",
         "settings.sr": "Srbský",
+        "settings.syncAmLocale": "Synchronizovat jazyk AM/AppMan s AM-GUI",
         "settings.theme": "Motiv",
         "settings.title": "Nastavení",
         "settings.vi": "Vietnamština",
@@ -433,6 +434,7 @@
         "settings.purging": "Purging…",
         "settings.removedFiles": "{count} file(s) removed.",
         "settings.sr": "Serbian",
+        "settings.syncAmLocale": "Sync AM/AppMan language with AM-GUI",
         "settings.theme": "Theme",
         "settings.title": "Settings",
         "settings.vi": "Vietnamese",
@@ -675,6 +677,7 @@
         "settings.purging": "Limpiando…",
         "settings.removedFiles": "{count} archivo(s) eliminado(s).",
         "settings.sr": "Serbio",
+        "settings.syncAmLocale": "Sincronizar el idioma de AM/AppMan con AM-GUI",
         "settings.theme": "Tema",
         "settings.title": "Ajustes",
         "settings.vi": "Vietnamita",
@@ -917,6 +920,7 @@
         "settings.purging": "Vidage…",
         "settings.removedFiles": "{count} fichier(s) supprimé(s).",
         "settings.sr": "Serbe",
+        "settings.syncAmLocale": "Synchroniser la langue d'AM/AppMan avec AM-GUI",
         "settings.theme": "Thème",
         "settings.title": "Paramètres",
         "settings.vi": "Vietnamien",
@@ -1014,7 +1018,7 @@
         "details.descFallback": "Nessuna descrizione disponibile.",
         "details.descUnavailable": "Descrizione non disponibile.",
         "details.errorDesc": "Impossibile recuperare la descrizione remota.\n{error}",
-        "details.install": "Instalare",
+        "details.install": "Installa",
         "details.loadingDesc": "Recupero descrizione remota...\n\nNome interno: {name}",
         "details.markdownParseError": "Analisi del markdown fallita.",
         "details.noDescription": "Nessuna descrizione fornita.",
@@ -1159,6 +1163,7 @@
         "settings.purging": "Pulizia…",
         "settings.removedFiles": "{count} file rimossi.",
         "settings.sr": "Serbo",
+        "settings.syncAmLocale": "Sincronizza la lingua di AM/AppMan con AM-GUI",
         "settings.theme": "Tema",
         "settings.title": "Impostazioni",
         "settings.vi": "Vietnamita",
@@ -1401,6 +1406,7 @@
         "settings.purging": "A limpar…",
         "settings.removedFiles": "{count} ficheiro(s) removido(s).",
         "settings.sr": "Serbio",
+        "settings.syncAmLocale": "Sincronizar o idioma do AM/AppMan com o AM-GUI",
         "settings.theme": "Tema",
         "settings.title": "Definições",
         "settings.vi": "Vietnamita",
@@ -1643,6 +1649,7 @@
         "settings.purging": "Čištimo…",
         "settings.removedFiles": "{count} fajl(ova) obrisano.",
         "settings.sr": "Srpski",
+        "settings.syncAmLocale": "Sinhronizuj jezik AM/AppMan sa AM-GUI",
         "settings.theme": "Tema",
         "settings.title": "Podešavanja",
         "settings.vi": "Vijetnamski",
@@ -1885,6 +1892,7 @@
         "settings.purging": "Đang xoá…",
         "settings.removedFiles": "Đã xoá {count} tập tin.",
         "settings.sr": "Tiếng Serbia",
+        "settings.syncAmLocale": "Đồng bộ hóa ngôn ngữ AM/AppMan với AM-GUI",
         "settings.theme": "Chủ đề",
         "settings.title": "Cài đặt",
         "settings.vi": "Tiếng Việt",
@@ -2384,7 +2392,11 @@
       if (locale && locale !== 'auto') currentLocale = locale;
     }
 
-    module.exports = { translations, getTrayLabels, getContextMenuLabels, tErr, setLocale };
+    function getCurrentLocale() {
+      return currentLocale;
+    }
+
+    module.exports = { translations, getTrayLabels, getContextMenuLabels, tErr, setLocale, getCurrentLocale };
   } else {
     window.i18n = window.i18n || {};
     window.i18n.catalog = translations;

@@ -190,6 +190,7 @@
     "settings.purging": "Čištimo…",
     "settings.removedFiles": "{count} fajl(ova) obrisano.",
     "settings.sr": "Srpski",
+    "settings.syncAmLocale": "Sinhronizuj jezik AM/AppMan sa AM-GUI",
     "settings.theme": "Tema",
     "settings.title": "Podešavanja",
     "settings.vi": "Vijetnamski",

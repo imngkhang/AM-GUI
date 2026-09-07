@@ -190,6 +190,7 @@
     "settings.purging": "Vidage…",
     "settings.removedFiles": "{count} fichier(s) supprimé(s).",
     "settings.sr": "Serbe",
+    "settings.syncAmLocale": "Synchroniser la langue d'AM/AppMan avec AM-GUI",
     "settings.theme": "Thème",
     "settings.title": "Paramètres",
     "settings.vi": "Vietnamien",

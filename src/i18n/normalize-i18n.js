@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Normalise l'ordre des clés de tous les fichiers locales/*.json
-// pour qu'ils suivent exactement l'ordre de en.json (langue de référence).
-// À lancer après avoir ajouté une nouvelle clé dans en.json.
+// Normalizes the key order of all locales/*.json files so they exactly
+// match en.json (reference language).
+// Run after adding a new key to en.json.
 'use strict';
 
 const fs = require('fs');
@@ -17,14 +17,14 @@ function writeJson(file, obj) {
   fs.writeFileSync(file, JSON.stringify(obj, null, 2) + '\n');
 }
 
-// Réordonne les clés d'un objet selon l'ordre de referenceKeys.
-// Les clés présentes dans obj mais absentes de referenceKeys sont placées à la fin.
+// Reorders an object's keys according to referenceKeys.
+// Keys present in obj but missing from referenceKeys are appended at the end.
 function reorderKeys(obj, referenceKeys) {
   const ordered = {};
   for (const key of referenceKeys) {
     if (key in obj) ordered[key] = obj[key];
   }
-  // Clés supplémentaires (non présentes dans la référence) → à la fin
+  // Extra keys (not in the reference) → appended at the end
   for (const key of Object.keys(obj)) {
     if (!(key in ordered)) ordered[key] = obj[key];
   }
@@ -35,7 +35,7 @@ function main() {
   const files = fs.readdirSync(LOCALES_DIR).filter((f) => f.endsWith('.json'));
   const langs = files.map((f) => path.basename(f, '.json')).sort();
 
-  // en.json = référence d'ordre
+  // en.json = key order reference
   const ref = readJson(path.join(LOCALES_DIR, 'en.json'));
   const sections = ['ui', 'tray', 'contextMenu', 'errors'];
 
@@ -49,7 +49,7 @@ function main() {
       if (!data[section] || !ref[section]) continue;
       const refKeys = Object.keys(ref[section]);
       const currentKeys = Object.keys(data[section]);
-      // Ne réordonner que si l'ordre diffère
+      // Only reorder when the order differs
       if (JSON.stringify(currentKeys) !== JSON.stringify(refKeys)) {
         data[section] = reorderKeys(data[section], refKeys);
         modified = true;
@@ -59,14 +59,14 @@ function main() {
     if (modified) {
       writeJson(file, data);
       changed++;
-      console.log('Réordonné: ' + lang + '.json');
+      console.log('Reordered: ' + lang + '.json');
     }
   }
 
   if (changed === 0) {
-    console.log('Tous les fichiers sont déjà dans l\'ordre de en.json.');
+    console.log('All files already follow the en.json key order.');
   } else {
-    console.log(changed + ' fichier(s) réordonné(s).');
+    console.log(changed + ' file(s) reordered.');
   }
 }
 

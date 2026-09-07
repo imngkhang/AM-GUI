@@ -86,6 +86,18 @@ let setAppListImpl = function(list) {
 };
 
 function setAppList(list) {
+  // Enriches the tiles with translated descriptions from the PLA site
+  // (state.categoryDesc is fed by the categories cache).
+  const catDesc = state.categoryDesc;
+  if (catDesc && catDesc.size && Array.isArray(list)) {
+    list = list.map((item) => {
+      if (item && typeof item === 'object' && item.name && !item.__section) {
+        const d = catDesc.get(item.name);
+        if (d) return Object.assign({}, item, { desc: d });
+      }
+      return item;
+    });
+  }
   return setAppListImpl(list);
 }
 
@@ -618,6 +630,7 @@ let syncBtn = null;
 const settingsBtn = document.getElementById('settingsBtn');
 const settingsPanel = document.getElementById('settingsPanel');
 const openExternalCheckbox = document.getElementById('openExternalLinksCheckbox');
+const syncAmLocaleCheckbox = document.getElementById('syncAmLocaleCheckbox');
 const purgeIconsBtn = document.getElementById('purgeIconsBtn');
 const purgeIconsResult = document.getElementById('purgeIconsResult');
 const tabs = document.querySelectorAll('.tab');
@@ -781,6 +794,34 @@ function getLangPref() {
   if (pref === 'auto') return getSystemLang();
   return pref;
 }
+window.getLangPref = getLangPref;
+
+// Builds the name → translated description map from PLA categories.
+function applyCategoryDescriptions(categories) {
+  const map = new Map();
+  for (const cat of (Array.isArray(categories) ? categories : [])) {
+    const d = cat && cat.descriptions;
+    if (d && typeof d === 'object') {
+      for (const [name, desc] of Object.entries(d)) {
+        if (typeof desc === 'string' && desc) map.set(name, desc);
+      }
+    }
+  }
+  state.categoryDesc = map;
+}
+
+// Hook registered by categories/cache.js: applies translated descriptions
+// whenever the categories cache is (re)loaded or refreshed.
+try {
+  window.features = window.features || {};
+  window.features.categories = window.features.categories || {};
+  window.features.categories._onUpdated = (categories) => {
+    try {
+      applyCategoryDescriptions(categories);
+      if (typeof applySearch === 'function') applySearch();
+    } catch (_) {}
+  };
+} catch (_) {}
 
 function t(key) {
   const lang = getLangPref();
@@ -1135,7 +1176,7 @@ function applyTranslations() {
       showNonAppimageModal(sandboxState.currentApp, reason);
     }
   } catch(_) {}
-  // Re-render les badges de la description (archived/obsolete) dans la langue courante
+  // Re-render description badges (archived/obsolete) in the current language
   try { detailsApi?.refreshDescription?.(); } catch (_) {}
   if (popupWasOpen) {
     showMissingPmPopup();
@@ -1151,8 +1192,8 @@ function syncTrayLocale() {
   } catch(_) {}
 }
 
-// Génère les options de langue du panneau de réglages depuis window.translations
-// (les libellés sont ensuite remplis par applyTranslations via data-i18n).
+// Generates the settings language options from window.translations
+// (labels are then filled by applyTranslations via data-i18n).
 function buildLanguageOptions() {
   const container = document.getElementById('langOptions');
   if (!container) return;
@@ -1188,6 +1229,7 @@ function initLanguagePreferences() {
           // Mark handled to avoid delegated double handling
           try { window.__langChangeHandled = true; } catch(_){ }
           rerenderActiveCategory();
+          syncLanguageDependents();
         });
       } catch(_){}
     });
@@ -1260,7 +1302,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           if (window.categories && typeof window.categories.loadCategories === 'function') {
             await window.categories.loadCategories({ showToast });
           }
-          // Bascule sur l'onglet Applications
+          // Switch to the Applications tab
           const tabApplications = document.querySelector('.tab[data-category="all"]');
           if (tabApplications) tabApplications.click();
           showToast(t('toast.refreshing'));
@@ -1345,8 +1387,58 @@ if (settingsPanelLang) {
       try { applyTranslations(); } catch(_){ }
       try { document.documentElement.setAttribute('lang', getLangPref()); } catch(_){ }
       rerenderActiveCategory();
+      syncLanguageDependents();
     }
   });
+}
+
+// Sync AM/AppMan locale checkbox (persisted in localStorage)
+try {
+  if (syncAmLocaleCheckbox) {
+    syncAmLocaleCheckbox.checked = localStorage.getItem('syncAmLocale') === '1';
+    syncAmLocaleCheckbox.addEventListener('change', () => {
+      try { localStorage.setItem('syncAmLocale', syncAmLocaleCheckbox.checked ? '1' : '0'); } catch (_) {}
+      // Sync immediately when checked, so the current language applies right away.
+      if (syncAmLocaleCheckbox.checked) {
+        try {
+          if (window.electronAPI && typeof window.electronAPI.syncAmLocale === 'function') {
+            window.electronAPI.syncAmLocale(getLangPref());
+          }
+        } catch (_) {}
+      }
+    });
+  }
+} catch (_) {}
+
+// Refreshes language-dependent data: translated tile descriptions (via the
+// categories cache) and, if opted in, the AM/AppMan locale.
+function syncLanguageDependents() {
+  (async () => {
+    try {
+      if (window.electronAPI && typeof window.electronAPI.setTrayLocale === 'function') {
+        await window.electronAPI.setTrayLocale(getLangPref());
+      }
+      // Opt-in: also sync AM/AppMan's language (translate command).
+      if (syncAmLocaleCheckbox && syncAmLocaleCheckbox.checked) {
+        try {
+          if (window.electronAPI && typeof window.electronAPI.syncAmLocale === 'function') {
+            await window.electronAPI.syncAmLocale(getLangPref());
+          }
+        } catch (_) {}
+      }
+      // Reload categories in the new language so tile descriptions get
+      // translated (disk cache purge → network fetch).
+      if (window.electronAPI && typeof window.electronAPI.deleteCategoriesCache === 'function') {
+        await window.electronAPI.deleteCategoriesCache();
+      }
+      if (window.categories && typeof window.categories.resetCache === 'function') {
+        window.categories.resetCache();
+      }
+      if (window.categories && typeof window.categories.loadCategories === 'function') {
+        await window.categories.loadCategories({ backgroundRefresh: false });
+      }
+    } catch (_) {}
+  })();
 }
 
 // --- Preferences (theme & default mode) ---
@@ -1364,7 +1456,7 @@ if (!localStorage.getItem('defaultMode')) {
   localStorage.setItem('defaultMode', state.viewMode || 'grid');
 }
 
-// Copier une commande (am/appman) au clic
+// Copy an (am/appman) command on click
 document.addEventListener('click', async (ev) => {
   const btn = ev.target.closest && ev.target.closest('.copy-cmd');
   if (!btn) return;
@@ -1388,7 +1480,7 @@ document.addEventListener('click', (ev) => {
   const href = a.getAttribute('href');
   if (!href || !/^https?:\/\//i.test(href)) return;
   if (!loadOpenExternalPref()) {
-    // Ouvrir dans une popup simple
+    // Open in a simple popup
     ev.preventDefault();
     ev.stopPropagation();
     window.open(href, '_blank', 'noopener,noreferrer,width=980,height=700');
@@ -1875,7 +1967,7 @@ tabs.forEach(tab => {
       window.categories.updateDropdownLabel(state, t, CATEGORY_ICON_MAP);
     }
     applySearch();
-    // Fermer tout prompt de choix interactif lors du changement d’onglet
+    // Close any interactive choice prompt when switching tabs
     document.querySelectorAll('.choice-dialog').forEach(e => e.remove());
     const isUpdatesTab = state.activeCategory === 'updates';
     const isAdvancedTab = state.activeCategory === 'advanced';

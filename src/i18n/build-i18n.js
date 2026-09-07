@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Régénère src/i18n/translations.js depuis src/i18n/locales/*.json
-// À lancer après toute modification des fichiers JSON de traduction.
+// Regenerates src/i18n/translations.js from src/i18n/locales/*.json
+// Run after editing any locale JSON file.
 'use strict';
 
 const fs = require('fs');
@@ -9,7 +9,7 @@ const path = require('path');
 const LOCALES_DIR = path.join(__dirname, 'locales');
 const OUT_FILE = path.join(__dirname, 'translations.js');
 
-// Sérialise un objet en littéral JS (clés/valeurs en double quotes, indenté).
+// Serializes an object as a JS literal (keys/values double-quoted, indented).
 function serializeObject(obj, indent) {
   if (!obj || Object.keys(obj).length === 0) return '{}';
   const json = JSON.stringify(obj, null, 2);
@@ -19,7 +19,7 @@ function serializeObject(obj, indent) {
   return '{\n' + inner + '\n' + ' '.repeat(Math.max(0, indent - 2)) + '}';
 }
 
-// Partie "logique" du fichier généré : identique à l'ancien translations.js.
+// "Logic" part of the generated file: same as the old translations.js.
 const FOOTER = [
   "  if (typeof module !== 'undefined' && module.exports) {",
   "    let currentLocale = 'en';",
@@ -61,7 +61,11 @@ const FOOTER = [
   "      if (locale && locale !== 'auto') currentLocale = locale;",
   '    }',
   '',
-  '    module.exports = { translations, getTrayLabels, getContextMenuLabels, tErr, setLocale };',
+  '    function getCurrentLocale() {',
+  '      return currentLocale;',
+  '    }',
+  '',
+  '    module.exports = { translations, getTrayLabels, getContextMenuLabels, tErr, setLocale, getCurrentLocale };',
   '  } else {',
   '    window.i18n = window.i18n || {};',
   '    window.i18n.catalog = translations;',
@@ -105,7 +109,7 @@ function main() {
   out.push(...FOOTER);
 
   fs.writeFileSync(OUT_FILE, out.join('\n') + '\n');
-  console.log('Généré src/i18n/translations.js (' + langs.length + ' langues)');
+  console.log('Generated src/i18n/translations.js (' + langs.length + ' languages)');
 }
 
 main();

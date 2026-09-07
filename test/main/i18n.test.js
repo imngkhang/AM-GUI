@@ -1,5 +1,5 @@
-// Tests: cohérence des clés i18n — chaque langue doit avoir exactement
-// les mêmes clés que en.json (source de référence dans locales/).
+// Tests: i18n key consistency — every language must have exactly the same
+// keys as en.json (reference source in locales/).
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert');

@@ -38,13 +38,24 @@
   }
 
   // Resolve relative asset paths (e.g. "../screenshots/x.webp") against the
-  // published app page location.
+  // published app page location (2 levels deep, same as /<lang>/app/).
   function resolveAssetUrl(raw) {
     const s = String(raw || '').trim();
     if (!s) return '';
     if (/^https?:\/\//i.test(s)) return s;
     try { return new URL(s, 'https://portable-linux-apps.github.io/app/').href; } catch (_) { return s; }
   }
+
+  const PLA_BASE = 'https://portable-linux-apps.github.io';
+
+  // Fetches a PLA resource in the UI language, with English fallback.
+  // Uses the shared module src/i18n/pla-fetch.js (loaded before this script).
+  const fetchPla = (window.plaFetch && typeof window.plaFetch.createPlaFetch === 'function')
+    ? window.plaFetch.createPlaFetch(
+        () => (typeof window.getLangPref === 'function' ? window.getLangPref() : 'en'),
+        (url, opts) => fetch(url, opts)
+      )
+    : (path) => fetch(`${PLA_BASE}/en/${path}`);
 
   function init(options = {}) {
     const state = options.state;
@@ -147,7 +158,6 @@
         applyDescription(appName, cached);
         return;
       }
-      const url = `https://portable-linux-apps.github.io/app/${encodeURIComponent(appName)}.json`;
       let markdown;
       let buttons = [];
       let sites = [];
@@ -156,8 +166,7 @@
       let archived = false;
       let obsolete = null;
       try {
-        const response = await fetch(url, { method: 'GET' });
-        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const response = await fetchPla(`app/${encodeURIComponent(appName)}.json`);
         const data = await response.json();
         markdown = typeof data.description === 'string' ? data.description : '';
         buttons = parseButtons(data.buttons);
