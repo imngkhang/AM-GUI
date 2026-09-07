@@ -1,0 +1,68 @@
+name: build-AppImage
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch: {} 
+  schedule:
+    - cron: '0 0 * * *' 
+
+jobs:
+  build:
+    name: "${{ matrix.name }} (${{ matrix.arch }})"
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      matrix:
+        include:
+          - runs-on: ubuntu-latest
+            name: Build AppImage
+            arch: x86_64
+          #comment out these 3 lines if aarch64 is not wanted
+          - runs-on: ubuntu-24.04-arm
+            name: Build AppImage
+            arch: aarch64
+    container: ghcr.io/pkgforge-dev/archlinux:latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: test
+      - name: Set version
+        run: |
+          RUN=${{ github.run_number }}
+          echo "VERSION=beta-nightly" >> $GITHUB_ENV
+      - name: Preparing Container
+        uses: pkgforge-dev/anylinux-setup-action@0964f2258d6c93d1391359978dde081fd8b3c6af # v2
+      - name: Install Dependencies
+        run: /bin/sh ./scripts/get-dependencies.sh
+      - name: Make AppImage
+        run: /bin/sh ./scripts/make-appimage.sh
+      - name: Upload artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: AppImage-${{ matrix.arch }}
+          path: dist
+
+  release:
+    needs: [build]
+    permissions:
+      write-all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: AppImage-*
+          merge-multiple: true
+          
+      - name: Release nightly AppImage
+        uses: pkgforge-dev/make-stable-appimage-release@4ed3d48ccb065352b6e6c0db6d39885b201c54a0 #v1.1
+        with:
+          tag_name: 'continuous'
+          release_name: 'AM-GUI: Nightly Build'
+          body: |
+            This is the nightly build of AM-GUI. It is automatically built and released every day.
+            
+            ⚠️ Warning: This is a prerelease version and may contain bugs. Use at your own risk.
+          files: dist/**/*.AppImage*
+          prerelease: true
+          make_latest: false 
