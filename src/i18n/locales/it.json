@@ -45,7 +45,7 @@
     "details.descFallback": "Nessuna descrizione disponibile.",
     "details.descUnavailable": "Descrizione non disponibile.",
     "details.errorDesc": "Impossibile recuperare la descrizione remota.\n{error}",
-    "details.install": "Installa",
+    "details.install": "Instalare",
     "details.loadingDesc": "Recupero descrizione remota...\n\nNome interno: {name}",
     "details.markdownParseError": "Analisi del markdown fallita.",
     "details.noDescription": "Nessuna descrizione fornita.",
